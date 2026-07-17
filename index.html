@@ -1,93 +1,666 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-<meta charset="UTF-8">
-<title>PAŞAM GÜLSÜME</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
-    background: linear-gradient(135deg, #ffdde1, #ee9ca7, #ff758c);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    position: relative;
-  }
-
-  .message {
-    z-index: 10;
-    text-align: center;
-    color: #fff;
-    text-shadow: 0 2px 15px rgba(0,0,0,0.25);
-    animation: pop 1.2s ease-out;
-  }
-
-  .message h1 {
-    font-size: 3.2rem;
-    letter-spacing: 1px;
-    margin-bottom: 10px;
-  }
-
-  .message p {
-    font-size: 1.3rem;
-    opacity: 0.95;
-  }
-
-  @keyframes pop {
-    0% { transform: scale(0.5); opacity: 0; }
-    60% { transform: scale(1.1); opacity: 1; }
-    100% { transform: scale(1); }
-  }
-
-  .heart {
-    position: absolute;
-    bottom: -50px;
-    color: #fff;
-    opacity: 0.85;
-    animation: floatUp linear infinite;
-    pointer-events: none;
-  }
-
-  @keyframes floatUp {
-    0% {
-      transform: translateY(0) rotate(0deg) scale(1);
-      opacity: 0.9;
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+export const Route = createFileRoute("/")({
+  component: Index,
+});
+type View = "intro" | "letter" | "yes" | "no";
+type View = "intro" | "letter" | "game" | "yes" | "no";
+/* ---------------- ses ---------------- */
+function playMelody(kind: "happy" | "sad" | "pop") {
+function playMelody(kind: "happy" | "sad" | "pop" | "win" | "ding") {
+  try {
+    const AC =
+      (window as unknown as { AudioContext: typeof AudioContext; webkitAudioContext?: typeof AudioContext })
+    const notes =
+      kind === "happy"
+        ? [
+            { f: 523.25, t: 0.0, d: 0.22 },
+            { f: 659.25, t: 0.2, d: 0.22 },
+            { f: 783.99, t: 0.4, d: 0.22 },
+            { f: 1046.5, t: 0.6, d: 0.35 },
+            { f: 880.0, t: 1.0, d: 0.22 },
+            { f: 987.77, t: 1.2, d: 0.22 },
+            { f: 1046.5, t: 1.4, d: 0.5 },
+            { f: 1318.5, t: 1.95, d: 0.6 },
+            { f: 523.25, t: 0.0, d: 0.2 },
+            { f: 659.25, t: 0.2, d: 0.2 },
+            { f: 783.99, t: 0.4, d: 0.2 },
+            { f: 1046.5, t: 0.6, d: 0.3 },
+            { f: 880.0, t: 0.95, d: 0.2 },
+            { f: 987.77, t: 1.15, d: 0.2 },
+            { f: 1046.5, t: 1.35, d: 0.45 },
+            { f: 1318.5, t: 1.85, d: 0.55 },
+            { f: 1046.5, t: 2.45, d: 0.3 },
+            { f: 1318.5, t: 2.8, d: 0.6 },
+          ]
+        : kind === "sad"
+          ? [
+              { f: 349.23, t: 1.8, d: 0.7 },
+              { f: 329.63, t: 2.55, d: 1.0 },
+            ]
+          : [{ f: 1200, t: 0, d: 0.08 }];
+          : kind === "win"
+            ? [
+                { f: 523.25, t: 0, d: 0.12 },
+                { f: 659.25, t: 0.12, d: 0.12 },
+                { f: 783.99, t: 0.24, d: 0.12 },
+                { f: 1046.5, t: 0.36, d: 0.3 },
+              ]
+            : kind === "ding"
+              ? [{ f: 1568, t: 0, d: 0.15 }]
+              : [{ f: 1200, t: 0, d: 0.08 }];
+    notes.forEach((n) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = kind === "happy" ? "triangle" : kind === "sad" ? "sine" : "square";
+      o.type = kind === "happy" || kind === "win" ? "triangle" : kind === "sad" ? "sine" : "square";
+      o.frequency.value = n.f;
+      g.gain.setValueAtTime(0.0001, now + n.t);
+      g.gain.exponentialRampToValueAtTime(kind === "pop" ? 0.15 : 0.25, now + n.t + 0.03);
+      g.gain.exponentialRampToValueAtTime(kind === "pop" || kind === "ding" ? 0.15 : 0.25, now + n.t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + n.t + n.d);
+      o.connect(g).connect(ctx.destination);
+      o.start(now + n.t);
+function useConfetti() {
+  const [bursts, setBursts] = useState<{ id: number; x: number; y: number }[]>([]);
+  const idRef = useRef(0);
+  const burst = (x: number, y: number) => {
+  const burst = useCallback((x: number, y: number) => {
+    const id = idRef.current++;
+    setBursts((b) => [...b, { id, x, y }]);
+    setTimeout(() => setBursts((b) => b.filter((z) => z.id !== id)), 1400);
+  };
+  }, []);
+  return { bursts, burst };
+}
+  if (view === "yes") return <YesScreen onBack={() => setView("intro")} />;
+  if (view === "no") return <NoScreen onBack={() => setView("intro")} />;
+  if (view === "letter") return <LetterScreen onBack={() => setView("intro")} />;
+  return <IntroScreen onOpenLetter={() => setView("letter")} onYes={() => setView("yes")} onNo={() => setView("no")} />;
+  if (view === "game") return <GameScreen onWin={() => setView("yes")} onBack={() => setView("intro")} />;
+  return (
+    <IntroScreen
+      onOpenLetter={() => setView("letter")}
+      onOpenGame={() => setView("game")}
+      onYes={() => setView("yes")}
+      onNo={() => setView("no")}
+    />
+  );
+}
+/* ---------------- intro ---------------- */
+function IntroScreen({
+  onOpenLetter,
+  onOpenGame,
+  onYes,
+  onNo,
+}: {
+  onOpenLetter: () => void;
+  onOpenGame: () => void;
+  onYes: () => void;
+  onNo: () => void;
+}) {
+  const [noStyle, setNoStyle] = useState<React.CSSProperties>({});
+  const [dodgeCount, setDodgeCount] = useState(0);
+  const { bursts, burst } = useConfetti();
+  const [popped, setPopped] = useState(0);
+  const dodgeNo = (e?: React.MouseEvent | React.TouchEvent | React.FocusEvent) => {
+    const vw = window.innerWidth;
+    "BABA KAÇÇÇÇÇ",
+    "asla",
+    "kalbim kırılır ha",
+    "SALSANA LAN",
+    "SİKSEN OLMAZ",
+  ];
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#120206] text-[#ffe4e8]">
+      <BackgroundLayers />
+      <FloatingHearts count={26} />
+      <InteractiveHeartRain onPop={(x, y) => { burst(x, y); setPopped((n) => n + 1); }} count={32} />
+      <FallingPetals count={18} />
+      <JumpingCats />
+      {/* confetti */}
+      {bursts.map((b) => (
+        <Confetti key={b.id} x={b.x} y={b.y} />
+      ))}
+          <span className="inline-block animate-[fadeUp_1s_ease-out]">Gülsüm,</span>
+          <br />
+          <span
+            className="inline-block animate-[fadeUp_1.2s_ease-out_0.3s_both] bg-gradient-to-r from-[#ff5c7a] via-[#ff8095] to-[#ff2e55] bg-clip-text italic text-transparent"
+            className="inline-block bg-gradient-to-r from-[#ff5c7a] via-[#ff8095] to-[#ff2e55] bg-clip-text italic text-transparent"
+            style={{ backgroundSize: "200% 100%", animation: "fadeUp 1.2s ease-out 0.3s both, shimmer 4s linear infinite" }}
+          >
+            sana bir şey soracağım.
+        </h1>
+        <p className="mx-auto mt-8 max-w-xl text-center text-base text-[#ffb3c0] sm:text-lg animate-[fadeUp_1.4s_ease-out_0.6s_both]">
+          Ama önce… seninle biraz konuşmam lazım. Aşağıdaki kartlara dokun 💗
+          Uçuşan kalplere dokun, patlat 💥 — kartları çevir, mektubu aç, oyunu oyna  lütfen yap kulun köpeğin olim 💗
+        </p>
+        {/* Kartlar */}
+        {popped > 0 && (
+          <p className="mt-4 text-center text-sm text-[#ff5c7a] animate-[fadeUp_0.3s_ease-out]">
+            {popped} kalp patladı 💗
+          </p>
+        )}
+        <div className="mt-14 grid gap-6">
+          <FlipCard
+            front="Seni neden mi seviyorum? 💗"
+            onClick={onOpenLetter}
+            cta="Mektubu aç →"
+          />
+          <FlipCard
+            front="Küçük bir oyun oynayalım mı? 🎮"
+            back="Kaçan kalbi yakala. Yakalarsan bir sürprizim var."
+            accent="#ff2e55"
+            onClick={onOpenGame}
+            cta="Oyna →"
+          />
+        </div>
+        {/* Soru */}
+        <div className="mt-24 text-center">
+          <p className="font-serif text-4xl text-[#ffd1d9] sm:text-5xl animate-[pulse_2.4s_ease-in-out_infinite]">
+            Sevgilim olur musun?(NOLUR)
+  );
+}
+/* ---------------- oyun: dokunamama ---------------- */
+function GameScreen({ onWin, onBack }: { onWin: () => void; onBack: () => void }) {
+  const [pos, setPos] = useState({ x: 50, y: 50 });
+  const [misses, setMisses] = useState(0);
+  const [countdown, setCountdown] = useState(3);
+  const [caught, setCaught] = useState(false);
+  const areaRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const id = setTimeout(() => setCountdown((c) => c - 1), 700);
+    return () => clearTimeout(id);
+  }, [countdown]);
+  const move = () => {
+    const el = areaRef.current;
+    if (!el) return;
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    const x = Math.random() * (w - 80);
+    const y = Math.random() * (h - 80);
+    setPos({ x, y });
+    playMelody("pop");
+  };
+  const teasers = ["siksen yakalayamzsın", "ALLAHIN VAZGEÇ", "kaç!", "nah yakalarsın", "eheh", "aha tutun tutun"];
+  useEffect(() => {
+    if (countdown > 0 || caught) return;
+    // otomatik zıplama zorluk
+    const id = setInterval(move, 900);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countdown, caught]);
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#120206] text-[#ffe4e8]">
+      <BackgroundLayers />
+      <FallingPetals count={10} />
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col px-6 py-10">
+        <div className="flex items-center justify-between">
+          <button onClick={onBack} className="text-sm text-[#ff9db0]/70 hover:text-[#ff9db0]">
+            ← geri
+          </button>
+          <p className="text-sm text-[#ffd1d9]">
+            Kaçırma sayısı: <span className="font-bold text-[#ff5c7a]">{misses}</span>
+          </p>
+        </div>
+        <h2 className="mt-6 text-center font-serif text-3xl text-[#ffd1d9] sm:text-5xl">
+          Kalbi Yakala 💗
+        </h2>
+        <p className="mt-2 text-center text-sm text-[#ff9db0]">
+          Kaçan kalbi tıkla. Yakalarsan… sürpriz.
+        </p>
+        <div
+          ref={areaRef}
+          className="relative mt-8 flex-1 rounded-3xl border border-[#ff2e55]/30 bg-gradient-to-br from-[#2a0810]/80 to-[#12020688] shadow-inner overflow-hidden"
+          style={{ minHeight: 380 }}
+        >
+          {countdown > 0 ? (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span
+                key={countdown}
+                className="font-serif text-9xl text-[#ff5c7a]"
+                style={{ animation: "popIn 0.6s cubic-bezier(.34,1.56,.64,1)" }}
+              >
+                {countdown}
+              </span>
+            </div>
+          ) : caught ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+              <span className="text-8xl animate-[popIn_0.6s_cubic-bezier(.34,1.56,.64,1)]">💗</span>
+              <p className="font-serif text-3xl text-[#ffd1d9]">Yakaladın! 🎉</p>
+              <button
+                onClick={onWin}
+                className="mt-4 rounded-full bg-gradient-to-r from-[#ff2e55] to-[#ff5c7a] px-8 py-3 font-semibold text-white shadow-[0_10px_40px_-10px_#ff2e55] hover:scale-105"
+              >
+                Sürprizi Aç →
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={() => {
+                  setCaught(true);
+                  playMelody("win");
+                }}
+                onMouseEnter={() => {
+                  setMisses((m) => m + 1);
+                  move();
+                }}
+                onTouchStart={() => {
+                  setMisses((m) => m + 1);
+                  move();
+                }}
+                className="absolute flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#ff2e55] to-[#ff5c7a] text-3xl shadow-[0_10px_30px_-5px_#ff2e55]"
+                style={{
+                  left: pos.x,
+                  top: pos.y,
+                  transition: "all 0.28s cubic-bezier(.34,1.56,.64,1)",
+                  animation: "pulseHeart 1.4s ease-in-out infinite",
+                }}
+                aria-label="kalp"
+              >
+                💗
+              </button>
+              {misses > 0 && (
+                <p
+                  key={misses}
+                  className="absolute left-1/2 top-4 -translate-x-1/2 text-sm italic text-[#ff9db0]/70"
+                  style={{ animation: "fadeUp 0.4s ease-out" }}
+                >
+                  {teasers[misses % teasers.length]}
+                </p>
+              )}
+              {misses >= 8 && (
+                <button
+                  onClick={() => setCaught(true)}
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-[#ff9db0]/40 bg-[#2a0810]/80 px-4 py-2 text-xs text-[#ff9db0]"
+                >
+                  tamam tamam yakalattın aferrin balıma✨
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+      <GlobalKeyframes />
+    </div>
+  );
+}
+/* ---------------- mektup ---------------- */
+function LetterScreen({ onBack }: { onBack: () => void }) {
+  const [opened, setOpened] = useState(false);
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#120206] text-[#ffe4e8]">
+      <BackgroundLayers />
+      <FloatingHearts count={20} />
+      <InteractiveHeartRain onPop={() => {}} count={16} />
+      <FallingPetals count={14} />
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 py-16">
+          <button
+            onClick={() => {
+              setOpened(true);
+              playMelody("pop");
+              playMelody("ding");
+            }}
+            className="group relative"
+            aria-label="Mektubu aç"
+  );
+}
+/* ---------------- evet ---------------- */
+/* ---------------- evet (ekstra eğlenceli) ---------------- */
+function YesScreen({ onBack }: { onBack: () => void }) {
+  const { bursts, burst } = useConfetti();
+  const [clicks, setClicks] = useState(0);
+  useEffect(() => {
+    // konfeti fırtınası
+    for (let i = 0; i < 8; i++) {
+      setTimeout(() => {
+        burst(Math.random() * window.innerWidth, Math.random() * window.innerHeight * 0.4);
+      }, i * 120);
     }
-    100% {
-      transform: translateY(-110vh) rotate(360deg) scale(1.3);
-      opacity: 0;
-    }
-  }
-</style>
-</head>
-<body>
-
-  <div class="message">
-    <h1>💗 seni seviyorum ümmü gülsüm 💗</h1>
-    <p>LÜTFEN BANA AŞIK OL...</p>
-  </div>
-
-  <script>
-    const colors = ['#ff4d6d', '#ff85a1', '#ffb3c6', '#fff0f3', '#ff758f'];
-
-    function createHeart() {
-      const heart = document.createElement('div');
-      heart.classList.add('heart');
-      heart.innerHTML = '❤';
-      heart.style.left = Math.random() * 100 + 'vw';
-      heart.style.fontSize = (Math.random() * 24 + 16) + 'px';
-      heart.style.color = colors[Math.floor(Math.random() * colors.length)];
-      heart.style.animationDuration = (Math.random() * 4 + 4) + 's';
-      document.body.appendChild(heart);
-
-      setTimeout(() => heart.remove(), 8000);
-    }
-
-    setInterval(createHeart, 250);
-  </script>
-
-</body>
-</html>
+    const id = setInterval(() => {
+      burst(Math.random() * window.innerWidth, Math.random() * window.innerHeight * 0.6);
+    }, 600);
+      burst(Math.random() * window.innerWidth, Math.random() * window.innerHeight * 0.5);
+    }, 500);
+    return () => clearInterval(id);
+  }, [burst]);
+  const spelled = "SEVGİLİM";
+  const messages = [
+    "seni seviyorum 💗",
+    "bugün en güzel gün",
+    "sen benim her şeyimsin",
+    "kalbim seninle atıyor",
+    "gülüşün en güzel şey",
+  ];
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#2a0810] via-[#4d0a1f] to-[#120206] text-[#ffe4e8]">
+      <BackgroundLayers />
+      <FloatingHearts count={40} />
+      <FallingPetals count={30} />
+      <JumpingCats />
+      <InteractiveHeartRain onPop={(x, y) => burst(x, y)} count={50} />
+      <FallingPetals count={40} />
+      <DancingCats />
+      <SpinningStars />
+      {bursts.map((b) => (
+        <Confetti key={b.id} x={b.x} y={b.y} />
+      ))}
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 py-16 text-center">
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-6 py-16 text-center">
+        <div className="flex flex-wrap justify-center gap-1">
+          {spelled.split("").map((ch, i) => (
+            <span
+              key={i}
+              className="inline-block font-serif text-5xl sm:text-8xl bg-gradient-to-b from-[#ff5c7a] to-[#ff2e55] bg-clip-text text-transparent"
+              style={{
+                animation: `letterDrop 0.7s cubic-bezier(.34,1.56,.64,1) ${i * 0.08}s both, letterFloat 3s ease-in-out ${i * 0.15}s infinite`,
+              }}
+            >
+              {ch}
+            </span>
+          ))}
+        </div>
+        <h1
+          className="font-serif text-6xl sm:text-9xl animate-[popIn_0.8s_cubic-bezier(.34,1.56,.64,1)] bg-gradient-to-r from-[#ff5c7a] via-[#ffd1d9] to-[#ff2e55] bg-clip-text text-transparent"
+          style={{ backgroundSize: "200% 100%", animation: "popIn .8s cubic-bezier(.34,1.56,.64,1), shimmer 3s linear infinite" }}
+          className="mt-8 font-serif text-5xl sm:text-8xl"
+          style={{
+            background: "linear-gradient(90deg, #ff5c7a, #ffd1d9, #ff2e55, #ff5c7a)",
+            backgroundSize: "300% 100%",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+            animation: "popIn .8s cubic-bezier(.34,1.56,.64,1), shimmer 3s linear infinite",
+          }}
+        >
+          YUPİİİ! 🎉
+        </h1>
+        <p className="mt-6 font-serif text-3xl text-[#ffd1d9] sm:text-4xl animate-[fadeUp_1s_ease-out_0.3s_both]">
+          Seni çok seviyorum Gülsüm 💗
+        </p>
+        <div className="mt-12 flex flex-wrap items-end justify-center gap-6 text-6xl sm:text-7xl">
+          <span className="animate-[wiggle_1.2s_ease-in-out_infinite]">🐱💐</span>
+          <span className="animate-[wiggle_1.4s_ease-in-out_infinite]">😺💖</span>
+          <span className="animate-[wiggle_1.6s_ease-in-out_infinite]">🐈‍⬛🌹</span>
+          <span className="animate-[wiggle_1.3s_ease-in-out_infinite]">🐱🌷</span>
+          <span className="animate-[wiggle_1.5s_ease-in-out_infinite]">😻💞</span>
+        {/* Devasa nabız kalp - tıklanabilir */}
+        <button
+          onClick={(e) => {
+            burst(e.clientX, e.clientY);
+            setClicks((c) => c + 1);
+            playMelody("ding");
+          }}
+          className="mt-8 text-[110px] sm:text-[160px] transition-transform active:scale-90"
+          style={{ animation: "hugePump 1.1s ease-in-out infinite", filter: "drop-shadow(0 0 40px #ff2e55)" }}
+          aria-label="kalp"
+        >
+          💗
+        </button>
+        {clicks > 0 && (
+          <p key={clicks} className="text-sm text-[#ffd1d9]" style={{ animation: "fadeUp 0.3s ease-out" }}>
+            {messages[clicks % messages.length]} ({clicks})
+          </p>
+        )}
+        {/* Dans eden kediler bandı */}
+        <div className="mt-10 flex flex-wrap items-end justify-center gap-4 text-5xl sm:text-6xl">
+          {["🐱💐", "😺💖", "🐈‍⬛🌹", "🐱🌷", "😻💞", "🐈💕"].map((c, i) => (
+            <span
+              key={i}
+              className="inline-block"
+              style={{ animation: `wiggle ${1 + i * 0.15}s ease-in-out ${i * 0.1}s infinite` }}
+            >
+              {c}
+            </span>
+          ))}
+        </div>
+        {/* Kayan mesaj bandı */}
+        <div className="mt-10 w-full overflow-hidden rounded-full border border-[#ff2e55]/30 bg-[#12020688] py-3">
+          <div className="flex gap-12 whitespace-nowrap" style={{ animation: "marquee 18s linear infinite" }}>
+            {[...Array(2)].map((_, k) => (
+              <div key={k} className="flex gap-12 whitespace-nowrap">
+                {messages.map((m, i) => (
+                  <span key={`${k}-${i}`} className="font-serif text-lg text-[#ffd1d9]">
+                    ♥ {m}
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+        <p className="mt-10 max-w-md text-lg text-[#ffd6dc] animate-[fadeUp_1s_ease-out_0.6s_both]">
+        className="relative h-full w-full transition-transform duration-700 [transform-style:preserve-3d]"
+        style={{ transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
+      >
+        {/* front */}
+        <div
+          className="absolute inset-0 flex items-center justify-center rounded-2xl border p-6 text-center [backface-visibility:hidden] shadow-[0_10px_40px_-10px_rgba(255,46,85,0.4)] transition-transform group-hover:scale-[1.02]"
+          style={{
+          }}
+        >
+          <div>
+            <p className="font-serif text-2xl text-[#ffd1d9] sm:text-3xl" style={{ color: accent }}>
+            <p className="font-serif text-2xl sm:text-3xl" style={{ color: accent }}>
+              {front}
+            </p>
+            <p className="mt-3 text-xs uppercase tracking-widest text-[#ff9db0]/60">
+            </p>
+          </div>
+        </div>
+        {/* back */}
+        <div
+          className="absolute inset-0 flex items-center justify-center rounded-2xl border p-6 text-center [backface-visibility:hidden] [transform:rotateY(180deg)]"
+          style={{
+  );
+}
+function FloatingHearts({ count = 20 }: { count?: number }) {
+  const items = useMemo(() => Array.from({ length: count }), [count]);
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {items.map((_, i) => {
+        const left = (i * 47 + 7) % 100;
+        const delay = (i % 8) * 0.7;
+        const dur = 7 + (i % 6) * 1.5;
+        const size = 12 + (i % 5) * 6;
+        const opacity = 0.25 + (i % 4) * 0.15;
+        return (
+          <span
+            key={i}
+            className="absolute"
+            style={{
+              left: `${left}%`,
+              bottom: `-40px`,
+              fontSize: `${size}px`,
+              color: `rgba(255,46,85,${opacity})`,
+              animation: `floatUp ${dur}s linear ${delay}s infinite`,
+            }}
+          >
+            ♥
+          </span>
+        );
+      })}
+/* etkileşimli kalp yağmuru: her kalp tıklanabilir & patlar */
+function InteractiveHeartRain({
+  count,
+  onPop,
+}: {
+  count: number;
+  onPop: (x: number, y: number) => void;
+}) {
+  type H = { id: number; left: number; size: number; dur: number; delay: number; opacity: number };
+  const [hearts, setHearts] = useState<H[]>(() =>
+    Array.from({ length: count }, (_, i) => ({
+      id: i,
+      left: (i * 47 + 7) % 100,
+      size: 16 + (i % 5) * 8,
+      dur: 7 + (i % 6) * 1.5,
+      delay: (i % 8) * 0.7,
+      opacity: 0.4 + (i % 4) * 0.15,
+    })),
+  );
+  const nextId = useRef(count);
+  const pop = (id: number, e: React.MouseEvent | React.TouchEvent) => {
+    const x = "clientX" in e ? e.clientX : (e as React.TouchEvent).touches[0]?.clientX ?? 0;
+    const y = "clientY" in e ? e.clientY : (e as React.TouchEvent).touches[0]?.clientY ?? 0;
+    onPop(x, y);
+    playMelody("ding");
+    setHearts((h) =>
+      h
+        .filter((z) => z.id !== id)
+        .concat({
+          id: nextId.current++,
+          left: Math.random() * 100,
+          size: 16 + Math.floor(Math.random() * 30),
+          dur: 7 + Math.random() * 6,
+          delay: 0,
+          opacity: 0.4 + Math.random() * 0.4,
+        }),
+    );
+  };
+  return (
+    <div className="absolute inset-0 z-[5] overflow-hidden">
+      {hearts.map((h) => (
+        <button
+          key={h.id}
+          onClick={(e) => {
+            e.stopPropagation();
+            pop(h.id, e);
+          }}
+          onTouchStart={(e) => pop(h.id, e)}
+          className="absolute cursor-pointer select-none transition-transform hover:scale-125 active:scale-75"
+          style={{
+            left: `${h.left}%`,
+            bottom: "-40px",
+            fontSize: `${h.size}px`,
+            color: `rgba(255,46,85,${h.opacity})`,
+            animation: `floatUp ${h.dur}s linear ${h.delay}s infinite`,
+            textShadow: "0 0 20px rgba(255,46,85,0.5)",
+            background: "transparent",
+            border: "none",
+            padding: 4,
+          }}
+          aria-label="kalp"
+        >
+          ♥
+        </button>
+      ))}
+    </div>
+  );
+}
+  );
+}
+function DancingCats() {
+  const cats = ["🐱", "😺", "😻", "🐈", "🐈‍⬛", "😸", "🐾"];
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-around px-4 pb-2">
+      {cats.map((c, i) => (
+        <span
+          key={i}
+          className="text-4xl sm:text-5xl"
+          style={{ animation: `dance ${0.9 + i * 0.15}s ease-in-out ${i * 0.1}s infinite` }}
+        >
+          {c}
+        </span>
+      ))}
+    </div>
+  );
+}
+function SpinningStars() {
+  const items = useMemo(() => Array.from({ length: 12 }), []);
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {items.map((_, i) => {
+        const left = (i * 41 + 11) % 100;
+        const top = (i * 29 + 7) % 90;
+        const dur = 3 + (i % 4);
+        return (
+          <span
+            key={i}
+            className="absolute text-2xl"
+            style={{
+              left: `${left}%`,
+              top: `${top}%`,
+              opacity: 0.7,
+              color: "#ffd1d9",
+              animation: `spin ${dur}s linear infinite, twinkle 2s ease-in-out infinite`,
+            }}
+          >
+            ✦
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+function BackgroundLayers() {
+  return (
+    <>
+}
+function Confetti({ x, y }: { x: number; y: number }) {
+  const pieces = useMemo(() => Array.from({ length: 14 }), []);
+  const pieces = useMemo(() => Array.from({ length: 18 }), []);
+  return (
+    <div className="pointer-events-none fixed z-40" style={{ left: x, top: y }}>
+      {pieces.map((_, i) => {
+        const angle = (i / 14) * Math.PI * 2;
+        const dist = 60 + Math.random() * 40;
+        const angle = (i / 18) * Math.PI * 2;
+        const dist = 60 + Math.random() * 60;
+        const dx = Math.cos(angle) * dist;
+        const dy = Math.sin(angle) * dist;
+        const colors = ["#ff2e55", "#ff5c7a", "#ffd1d9", "#c9a84c", "#ff8095"];
+        const colors = ["#ff2e55", "#ff5c7a", "#ffd1d9", "#c9a84c", "#ff8095", "#ffffff"];
+        return (
+          <span
+            key={i}
+        0%,100% { transform: translateY(0); }
+        50% { transform: translateY(-30px) scale(1.1); }
+      }
+      @keyframes dance {
+        0%,100% { transform: translateY(0) rotate(-10deg); }
+        25% { transform: translateY(-25px) rotate(10deg) scale(1.1); }
+        50% { transform: translateY(-10px) rotate(-5deg); }
+        75% { transform: translateY(-30px) rotate(15deg) scale(1.15); }
+      }
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      @keyframes rain {
+        to { transform: translateY(110vh); }
+      }
+      @keyframes pulseHeart {
+        0%,100% { transform: scale(1); }
+        50% { transform: scale(1.15); }
+      }
+      @keyframes hugePump {
+        0%,100% { transform: scale(1); }
+        25% { transform: scale(1.15) rotate(-4deg); }
+        50% { transform: scale(1.25) rotate(0deg); }
+        75% { transform: scale(1.1) rotate(4deg); }
+      }
+      @keyframes letterDrop {
+        0% { opacity: 0; transform: translateY(-80px) rotate(-20deg); }
+        60% { transform: translateY(10px) rotate(5deg); }
+        100% { opacity: 1; transform: translateY(0) rotate(0); }
+      }
+      @keyframes letterFloat {
+        0%,100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+      }
+      @keyframes marquee {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes twinkle {
+        0%,100% { opacity: 0.3; }
+        50% { opacity: 1; }
+      }
+    `}</style>
+  );
+}
